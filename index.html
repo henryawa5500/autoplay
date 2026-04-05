@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+
+    <!-- MindAR -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        body {
+            position: fixed;
+            inset: 0;
+        }
+
+        a-scene,
+        canvas,
+        .a-canvas {
+            position: fixed !important;
+            inset: 0;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .mindar-ui-overlay {
+            z-index: 10;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="start-overlay"
+        style="position:fixed;z-index:1000;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2em;cursor:pointer;">
+        Tap to Start
+    </div>
+
+    <a-scene
+        mindar-image="imageTargetSrc: targets.mind; autoStart: true; filterMinCF: 0.0001; filterBeta: 0.001; warmupTolerance: 12; missTolerance: 20; uiScanning: yes;"
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" color-space="sRGB"
+        renderer="colorManagement: true; physicallyCorrectLights: false; antialias: true; alpha: true;"
+        loading-screen="enabled: false" debug-ui="enabled: false">
+
+        <a-assets>
+            <video id="vid" src="animation.mp4" preload="auto" autoplay loop playsinline webkit-playsinline
+                crossorigin="anonymous">
+            </video>
+        </a-assets>
+
+        <a-camera position="0 0 0"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-plane id="video-plane" material="shader: flat; src: #vid; side: double" width="1" height="0.5625"
+                position="0 0 0" rotation="0 0 0">
+            </a-plane>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const scene = document.querySelector("a-scene");
+            const video = document.querySelector("#vid");
+            const target = document.querySelector("[mindar-image-target]");
+            const plane = document.querySelector("#video-plane");
+            const overlay = document.getElementById("start-overlay");
+
+            // Error handling for missing elements
+            if (!scene || !video || !target || !plane || !overlay) {
+                console.error("Critical elements missing from DOM");
+                return;
+            }
+
+            let playTimeout = null;
+
+            const syncPlaneToVideo = () => {
+                if (!video.videoWidth || !video.videoHeight) return;
+                const aspect = video.videoWidth / video.videoHeight;
+                const height = 1;
+                plane.setAttribute("width", (aspect * height).toFixed(4));
+                plane.setAttribute("height", height.toFixed(4));
+            };
+
+            const ensureVideoPlayback = () => {
+                video.play().catch((err) => {
+                    console.log("Video play blocked:", err);
+                });
+            };
+
+            video.muted = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.setAttribute("playsinline", "");
+            video.setAttribute("webkit-playsinline", "");
+            video.setAttribute("autoplay", "");
+
+            scene.addEventListener("renderstart", () => {
+                console.log("Scene render started");
+                // Don't autoplay until user gesture
+
+                // Unlock audio/video on first tap
+                const unlockMedia = () => {
+                    video.muted = false;
+                    // Attempt to unlock video for autoplay
+                    video.play().then(() => video.pause()).catch(() => { });
+                    overlay.style.display = "none";
+                };
+                overlay.addEventListener("click", unlockMedia);
+                overlay.addEventListener("touchstart", unlockMedia);
+            });
+
+            video.addEventListener("loadedmetadata", () => {
+                syncPlaneToVideo();
+                console.log("Video metadata loaded", video.videoWidth, video.videoHeight);
+            });
+
+            video.addEventListener("loadeddata", () => {
+                syncPlaneToVideo();
+                console.log("Video loaded");
+            });
+
+            video.addEventListener("error", (e) => {
+                console.log("Video error:", e);
+            });
+
+            target.addEventListener("targetFound", () => {
+                console.log("Target found");
+                video.pause();
+                video.currentTime = 0;
+                if (playTimeout) clearTimeout(playTimeout);
+                playTimeout = setTimeout(() => {
+                    ensureVideoPlayback();
+                }, 2000);
+            });
+
+            target.addEventListener("targetLost", () => {
+                console.log("Target lost");
+                if (playTimeout) clearTimeout(playTimeout);
+                video.pause();
+                video.currentTime = 0;
+            });
+
+        });
+    </script>
+
+</body>
+
+</html>
