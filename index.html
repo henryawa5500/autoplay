@@ -90,33 +90,36 @@
             }
 
             let playTimeout = null;
-
-            const syncPlaneToTargetImage = () => {
-                // Get MindAR instance and target image dimensions
-                const mindarSystem = scene.systems['mindar-image-system'];
-                if (!mindarSystem || !mindarSystem.mindar) return;
-
-                const mindar = mindarSystem.mindar;
-                if (!mindar.estimator || !mindar.estimator.targetImageDimensions) return;
-
-                const { width: targetWidth, height: targetHeight } = mindar.estimator.targetImageDimensions;
-                const targetAspect = targetWidth / targetHeight;
-
-                // Set plane to match target image aspect ratio
-                // Use targetHeight as reference (1 unit)
-                const referenceHeight = 1;
-                const planeWidth = targetAspect * referenceHeight;
-
-                plane.setAttribute("width", planeWidth.toFixed(4));
-                plane.setAttribute("height", referenceHeight.toFixed(4));
-
-                console.log("Plane synced to target image:", { targetWidth, targetHeight, targetAspect, planeWidth });
-            };
+            let lastVideoAspect = 16 / 9; // Default aspect ratio
 
             const syncPlaneToVideo = () => {
-                // Fallback to video aspect ratio if target dimensions unavailable
-                if (!video.videoWidth || !video.videoHeight) return;
-                syncPlaneToTargetImage();
+                // Use actual video dimensions for accurate aspect ratio
+                if (video.videoWidth && video.videoHeight) {
+                    lastVideoAspect = video.videoWidth / video.videoHeight;
+                    const referenceHeight = 1;
+                    const planeWidth = lastVideoAspect * referenceHeight;
+
+                    plane.setAttribute("width", planeWidth.toFixed(4));
+                    plane.setAttribute("height", referenceHeight.toFixed(4));
+
+                    console.log("Plane synced to video aspect ratio:", {
+                        videoWidth: video.videoWidth,
+                        videoHeight: video.videoHeight,
+                        aspect: lastVideoAspect,
+                        planeWidth: planeWidth
+                    });
+                }
+            };
+
+            const scaleToTargetSize = () => {
+                // Scale the plane based on target detection
+                // MindAR uses physical units, so we set a standard scale
+                // Assuming target is approximately 100mm x height
+                const scaleX = 1;  // 100mm width
+                const scaleY = scaleX / lastVideoAspect;  // Maintain aspect ratio
+
+                plane.object3D.scale.set(scaleX, scaleY, 1);
+                console.log("Plane scaled to target size:", { scaleX, scaleY });
             };
 
             const ensureVideoPlayback = () => {
@@ -135,8 +138,11 @@
 
             scene.addEventListener("renderstart", () => {
                 console.log("Scene render started");
-                // Sync plane to target image dimensions when scene is ready
-                setTimeout(syncPlaneToTargetImage, 500);
+                // Sync plane to video aspect ratio when scene is ready
+                setTimeout(() => {
+                    syncPlaneToVideo();
+                    scaleToTargetSize();
+                }, 300);
 
                 // Don't autoplay until user gesture
 
@@ -167,7 +173,8 @@
 
             target.addEventListener("targetFound", () => {
                 console.log("Target found");
-                syncPlaneToTargetImage(); // Sync plane to target image dimensions
+                syncPlaneToVideo();  // Ensure video aspect ratio is synced
+                scaleToTargetSize(); // Apply proper scaling
                 video.pause();
                 video.currentTime = 0;
                 if (playTimeout) clearTimeout(playTimeout);
@@ -181,6 +188,24 @@
                 if (playTimeout) clearTimeout(playTimeout);
                 video.pause();
                 video.currentTime = 0;
+            });
+
+            // Continuous responsive updates
+            const updatePlaneResponsively = () => {
+                // Keep plane responsive to any changes
+                if (video.videoWidth && video.videoHeight) {
+                    const currentAspect = video.videoWidth / video.videoHeight;
+                    if (currentAspect !== lastVideoAspect) {
+                        lastVideoAspect = currentAspect;
+                        syncPlaneToVideo();
+                    }
+                }
+                requestAnimationFrame(updatePlaneResponsively);
+            };
+
+            // Start responsive updates after scene renders
+            scene.addEventListener("renderstart", () => {
+                requestAnimationFrame(updatePlaneResponsively);
             });
 
         });
