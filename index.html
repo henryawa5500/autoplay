@@ -122,32 +122,31 @@
             };
 
             const syncPlaneToTarget = () => {
-                // Get target image dimensions from MindAR
-                const dimensions = getTargetImageDimensions();
+                // Target image dimensions: 822 x 1332 pixels
+                const targetWidth = 822;
+                const targetHeight = 1332;
+                const targetAspect = targetWidth / targetHeight; // 0.618
 
-                if (dimensions) {
-                    targetImageDimensions = dimensions;
-                    const targetAspect = dimensions.width / dimensions.height;
+                // Scale factor: increase by 2x since current is half size
+                const scaleMultiplier = 2;
 
-                    // Scale based on target dimensions
-                    // Set a base scale that works well for most devices
-                    const baseScale = 1;
-                    const scaleX = baseScale;
-                    const scaleY = baseScale / targetAspect;
+                // Set plane dimensions to match target aspect ratio
+                // and scale up appropriately
+                const baseWidth = 1 * scaleMultiplier;           // 2
+                const baseHeight = baseWidth / targetAspect;     // ~3.24
 
-                    plane.setAttribute("width", baseScale.toFixed(4));
-                    plane.setAttribute("height", (baseScale / targetAspect).toFixed(4));
+                plane.setAttribute("width", baseWidth.toFixed(4));
+                plane.setAttribute("height", baseHeight.toFixed(4));
 
-                    console.log("Plane synced to target image:", {
-                        targetWidth: dimensions.width,
-                        targetHeight: dimensions.height,
-                        targetAspect: targetAspect,
-                        scaleX: scaleX,
-                        scaleY: scaleY
-                    });
-                    return true;
-                }
-                return false;
+                console.log("Plane synced to target image:", {
+                    targetWidth: targetWidth,
+                    targetHeight: targetHeight,
+                    targetAspect: targetAspect.toFixed(4),
+                    planeWidth: baseWidth,
+                    planeHeight: baseHeight.toFixed(4),
+                    scaleMultiplier: scaleMultiplier
+                });
+                return true;
             };
 
             const ensureVideoPlayback = () => {
