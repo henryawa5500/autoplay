@@ -91,12 +91,32 @@
 
             let playTimeout = null;
 
+            const syncPlaneToTargetImage = () => {
+                // Get MindAR instance and target image dimensions
+                const mindarSystem = scene.systems['mindar-image-system'];
+                if (!mindarSystem || !mindarSystem.mindar) return;
+
+                const mindar = mindarSystem.mindar;
+                if (!mindar.estimator || !mindar.estimator.targetImageDimensions) return;
+
+                const { width: targetWidth, height: targetHeight } = mindar.estimator.targetImageDimensions;
+                const targetAspect = targetWidth / targetHeight;
+
+                // Set plane to match target image aspect ratio
+                // Use targetHeight as reference (1 unit)
+                const referenceHeight = 1;
+                const planeWidth = targetAspect * referenceHeight;
+
+                plane.setAttribute("width", planeWidth.toFixed(4));
+                plane.setAttribute("height", referenceHeight.toFixed(4));
+
+                console.log("Plane synced to target image:", { targetWidth, targetHeight, targetAspect, planeWidth });
+            };
+
             const syncPlaneToVideo = () => {
+                // Fallback to video aspect ratio if target dimensions unavailable
                 if (!video.videoWidth || !video.videoHeight) return;
-                const aspect = video.videoWidth / video.videoHeight;
-                const height = 1;
-                plane.setAttribute("width", (aspect * height).toFixed(4));
-                plane.setAttribute("height", height.toFixed(4));
+                syncPlaneToTargetImage();
             };
 
             const ensureVideoPlayback = () => {
@@ -115,6 +135,9 @@
 
             scene.addEventListener("renderstart", () => {
                 console.log("Scene render started");
+                // Sync plane to target image dimensions when scene is ready
+                setTimeout(syncPlaneToTargetImage, 500);
+
                 // Don't autoplay until user gesture
 
                 // Unlock audio/video on first tap
@@ -144,6 +167,7 @@
 
             target.addEventListener("targetFound", () => {
                 console.log("Target found");
+                syncPlaneToTargetImage(); // Sync plane to target image dimensions
                 video.pause();
                 video.currentTime = 0;
                 if (playTimeout) clearTimeout(playTimeout);
