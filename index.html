@@ -67,7 +67,7 @@
         <a-camera position="0 0 0"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-plane id="video-plane" material="shader: flat; src: #vid; side: double" width="0.6" height="1"
+            <a-plane id="video-plane" material="shader: flat; src: #vid; side: double" width="0.85" height="1"
                 position="0 0 0" rotation="0 0 0">
             </a-plane>
         </a-entity>
@@ -90,7 +90,7 @@
             }
 
             let playTimeout = null;
-            let targetWidth = 0.6;  // Will be updated from target detection
+            let targetWidth = 0.85;  // Will be updated from target detection
             let targetHeight = 1.0; // Will be updated from target detection
 
             const syncPlaneToTarget = () => {
@@ -102,7 +102,7 @@
                 }
 
                 const mindar = mindarSystem.mindar;
-                
+
                 // Try to get target image dimensions
                 if (mindar.targetList && mindar.targetList.length > 0) {
                     const target0 = mindar.targetList[0];
@@ -120,13 +120,13 @@
                 // Apply the target dimensions to the plane
                 plane.setAttribute("width", targetWidth.toFixed(4));
                 plane.setAttribute("height", targetHeight.toFixed(4));
-                
+
                 // Apply object3D scale for consistent sizing across devices
                 plane.object3D.scale.set(targetWidth, targetHeight, 1);
-                
-                console.log("Plane synced to target dimensions:", { 
-                    width: targetWidth, 
-                    height: targetHeight 
+
+                console.log("Plane synced to target dimensions:", {
+                    width: targetWidth,
+                    height: targetHeight
                 });
             };
 
@@ -139,56 +139,56 @@
             video.muted = true;
             video.autoplay = true;
             video.loop = true;target dimensions when scene is ready
-                setTimeout(() => {
-                    syncPlaneToTarget();
-                }, 500);
+            setTimeout(() => {
+                syncPlaneToTarget();
+            }, 500);
 
-                // Don't autoplay until user gesture
+            // Don't autoplay until user gesture
 
-                // Unlock audio/video on first tap
-                const unlockMedia = () => {
-                    video.muted = false;
-                    // Attempt to unlock video for autoplay
-                    video.play().then(() => video.pause()).catch(() => { });
-                    overlay.style.display = "none";
-                };
-                overlay.addEventListener("click", unlockMedia);
-                overlay.addEventListener("touchstart", unlockMedia);
-            });
+            // Unlock audio/video on first tap
+            const unlockMedia = () => {
+                video.muted = false;
+                // Attempt to unlock video for autoplay
+                video.play().then(() => video.pause()).catch(() => { });
+                overlay.style.display = "none";
+            };
+            overlay.addEventListener("click", unlockMedia);
+            overlay.addEventListener("touchstart", unlockMedia);
+        });
 
-            video.addEventListener("loadedmetadata", () => {
-                console.log("Video metadata loaded", video.videoWidth, video.videoHeight);
-            });
+        video.addEventListener("loadedmetadata", () => {
+            console.log("Video metadata loaded", video.videoWidth, video.videoHeight);
+        });
 
-            video.addEventListener("loadeddata", () => {
-                console.log("Video loaded");
-            });
+        video.addEventListener("loadeddata", () => {
+            console.log("Video loaded");
+        });
 
-            video.addEventListener("error", (e) => {
-                console.log("Video error:", e);
-            });
+        video.addEventListener("error", (e) => {
+            console.log("Video error:", e);
+        });
 
-            target.addEventListener("targetFound", () => {
-                console.log("Target found - syncing plane to target size");
-                syncPlaneToTarget(); // Sync plane to target dimensions
-                video.pause();
-                video.currentTime = 0;
-                if (playTimeout) clearTimeout(playTimeout);
-                playTimeout = setTimeout(() => {
-                    ensureVideoPlayback();
-                }, 2000);
-            });
+        target.addEventListener("targetFound", () => {
+            console.log("Target found - syncing plane to target size");
+            syncPlaneToTarget(); // Sync plane to target dimensions
+            video.pause();
+            video.currentTime = 0;
+            if (playTimeout) clearTimeout(playTimeout);
+            playTimeout = setTimeout(() => {
+                ensureVideoPlayback();
+            }, 2000);
+        });
 
-            target.addEventListener("targetLost", () => {
-                console.log("Target lost");
-                if (playTimeout) clearTimeout(playTimeout);
-                video.pause();
-                video.currentTime = 0;
-            });
+        target.addEventListener("targetLost", () => {
+            console.log("Target lost");
+            if (playTimeout) clearTimeout(playTimeout);
+            video.pause();
+            video.currentTime = 0;
+        });
 
-            // Continuous responsive updates - sync whenever scale changes
-            const updatePlaneResponsively = () => {
-                syncPlaneToTarget(); updatePlaneResponsively = () => {
+        // Continuous responsive updates - sync whenever scale changes
+        const updatePlaneResponsively = () => {
+            syncPlaneToTarget(); updatePlaneResponsively = () => {
                 // Keep plane responsive to any changes
                 if (video.videoWidth && video.videoHeight) {
                     const currentAspect = video.videoWidth / video.videoHeight;
