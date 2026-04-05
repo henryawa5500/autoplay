@@ -127,13 +127,13 @@
                 const targetHeight = 1332;
                 const targetAspect = targetWidth / targetHeight; // 0.618
 
-                // Scale factor: increase by 2x since current is half size
-                const scaleMultiplier = 2;
+                // Scale factor: reduced to 1.5x for better sizing
+                const scaleMultiplier = 1.5;
 
                 // Set plane dimensions to match target aspect ratio
                 // and scale up appropriately
-                const baseWidth = 1 * scaleMultiplier;           // 2
-                const baseHeight = baseWidth / targetAspect;     // ~3.24
+                const baseWidth = 1 * scaleMultiplier;           // 1.5
+                const baseHeight = baseWidth / targetAspect;     // ~2.43
 
                 plane.setAttribute("width", baseWidth.toFixed(4));
                 plane.setAttribute("height", baseHeight.toFixed(4));
